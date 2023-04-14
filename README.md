@@ -4,6 +4,7 @@
 Code accelerator to migrate data from Snowflake tables into Databricks Delta Live Tables
 
 ## Overview
+This accelerator include a set of utility classes and a python notebook that leverages those classes.
 
 
 ## Special Thanks
