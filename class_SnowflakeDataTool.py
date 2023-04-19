@@ -88,6 +88,9 @@ class SnowflakeDataTool:
         sfRole: Set the role to use in Snowflake
         connectionName: Name of a pre-configured connection
         """
+        # List of tables
+        self._sfTables = []
+        
         self._sfConnection = None
         # Snowflake connection object
         if connectionName is not None:
@@ -110,10 +113,11 @@ class SnowflakeDataTool:
         
         if not self.is_connected():
             print("Failed to establish a connection. Check your connection options.")
+        else:
+            self._query_table_list()
         
         return None
     
-    #----- PUBLIC METHODS-----#
     def connect(self, 
                 sfServer: str, 
                 sfDatabase: str, 
@@ -135,6 +139,8 @@ class SnowflakeDataTool:
             
         if not self.is_connected():
             print("Failed to establish a connection. Check your connection options.")
+        else:
+            self._query_table_list()
         
         return None
       
@@ -179,6 +185,16 @@ class SnowflakeDataTool:
             
         return tables_list
     
+    def query_column_metadata(self, tableName):
+        """Retrieve a table's (tableName) column metadata"""
+        OP = 'ORDINAL_POSITION'
+        columns = ['COLUMN_NAME','DATA_TYPE',OP,'IS_NULLABLE']
+        table = tableName.upper()
+        sqlQuery = f"SELECT {','.join(columns)} FROM information_schema.columns WHERE table_name = '{table}' ORDER BY {OP}"
+        column_data_df = self.sql(sqlQuery)
+        
+        return column_data_df
+    
     def sql(self, query:str):
         """Execute a SQL query against the database"""
         try:
@@ -207,3 +223,11 @@ class SnowflakeDataTool:
         return result
     
     #----- PRIVATE METHODS -----#
+    def _query_table_list(self):
+        """Retrieve a list of known Snowflake tables"""
+        query = "SELECT concat(t.TABLE_SCHEMA,'.',t.TABLE_NAME) AS SFTABLE FROM\
+        information_schema.tables as t WHERE t.table_schema != 'INFORMATION_SCHEMA'"
+        tableList = self.sql(query).collect()
+        
+        _ = [self._sfTables.append(t.asDict().get('SF_TABLE')) for t in tableList]
+        return None
